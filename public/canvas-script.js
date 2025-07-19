@@ -10,7 +10,7 @@ let password = "";
 let activeField = null;
 
 const bg = new Image();
-bg.src = "background.jpg";
+bg.src = "background.png";
 
 const inputBoxes = {
   login: { x: 40, y: 150, width: 640, height: 50 },
