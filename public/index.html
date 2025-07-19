@@ -12,14 +12,16 @@
     }
     #hiddenInput {
       position: absolute;
-      left: -9999px; /* Ensures input is not visible but still focusable */
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
     }
   </style>
 </head>
 <body>
 
 <canvas id="loginCanvas" width="720" height="1402"></canvas>
-<input type="text" id="hiddenInput" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+<input type="text" id="hiddenInput" autocomplete="off" autocapitalize="none" />
 
 <script>
 const canvas = document.getElementById('loginCanvas');
@@ -32,6 +34,7 @@ let activeInput = null;
 let loginActivated = false;
 let passActivated = false;
 
+// Input and button box positions
 const loginBox = { x: 29, y: 368, width: 662, height: 100 };
 const passBox  = { x: 29, y: 586, width: 662, height: 100 };
 const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
