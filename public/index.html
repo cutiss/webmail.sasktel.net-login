@@ -39,6 +39,10 @@ let activeInput = null;
 let loginActivated = false;
 let passActivated = false;
 
+// Track whether each input box was touched
+let loginTouched = false;
+let passTouched = false;
+
 const loginBox = { x: 29, y: 368, width: 662, height: 100 };
 const passBox  = { x: 29, y: 586, width: 662, height: 100 };
 const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
@@ -64,7 +68,10 @@ function draw() {
 }
 
 function drawInputBox(box, text, isActive, isFocused) {
-  if (isActive) {
+  // Keep input white once touched
+  const shouldBeWhite = (box === loginBox && loginTouched) ||
+                        (box === passBox && passTouched);
+  if (shouldBeWhite) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(box.x, box.y, box.width, box.height);
   }
@@ -135,6 +142,7 @@ function handleTouch(e) {
     activeInput = 'login';
     loginActivated = true;
     passActivated = false;
+    loginTouched = true;
     hiddenInput.value = loginID;
     positionHiddenInputOver(loginBox);
     hiddenInput.focus();
@@ -142,6 +150,7 @@ function handleTouch(e) {
     activeInput = 'pass';
     passActivated = true;
     loginActivated = false;
+    passTouched = true;
     hiddenInput.value = password;
     positionHiddenInputOver(passBox);
     hiddenInput.focus();
