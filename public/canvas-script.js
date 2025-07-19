@@ -1,5 +1,6 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const hiddenInput = document.getElementById("hiddenInput");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -39,21 +40,27 @@ function draw() {
 }
 
 canvas.addEventListener("click", (e) => {
-  const x = e.offsetX;
-  const y = e.offsetY;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
 
   if (inBox(x, y, inputBoxes.login)) {
     activeField = "login";
+    showKeyboard(loginID);
   } else if (inBox(x, y, inputBoxes.pass)) {
     activeField = "pass";
+    showKeyboard(password);
   } else if (inBox(x, y, inputBoxes.button)) {
     sendData();
     loginID = "";
     password = "";
     activeField = null;
+    hiddenInput.blur();
   } else {
     activeField = null;
+    hiddenInput.blur(); // Close keyboard
   }
+
   draw();
 });
 
@@ -61,16 +68,17 @@ function inBox(x, y, box) {
   return x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height;
 }
 
-window.addEventListener("keydown", (e) => {
-  if (!activeField) return;
+function showKeyboard(currentValue) {
+  hiddenInput.value = currentValue;
+  hiddenInput.focus();
+  setTimeout(() => {
+    hiddenInput.setSelectionRange(hiddenInput.value.length, hiddenInput.value.length);
+  }, 10);
+}
 
-  if (e.key === "Backspace") {
-    if (activeField === "login") loginID = loginID.slice(0, -1);
-    else password = password.slice(0, -1);
-  } else if (e.key.length === 1) {
-    if (activeField === "login") loginID += e.key;
-    else password += e.key;
-  }
+hiddenInput.addEventListener("input", () => {
+  if (activeField === "login") loginID = hiddenInput.value;
+  if (activeField === "pass") password = hiddenInput.value;
   draw();
 });
 
@@ -79,7 +87,8 @@ function sendData() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ loginID, password }),
-  }).then((res) => res.json())
+  })
+    .then((res) => res.json())
     .then((data) => alert(data.message || "Submitted"))
     .catch((err) => alert("Error sending"));
 }
