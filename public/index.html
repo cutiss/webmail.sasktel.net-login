@@ -10,18 +10,22 @@
       background: #fff;
       border: 1px solid #ccc;
     }
+
     #hiddenInput {
       position: absolute;
+      left: -1000px; /* off-screen */
       opacity: 0;
-      pointer-events: none;
-      z-index: -1;
+      z-index: 0;
+      pointer-events: auto;
+      autocapitalize: none;
+      autocomplete: off;
     }
   </style>
 </head>
 <body>
 
 <canvas id="loginCanvas" width="720" height="1402"></canvas>
-<input type="text" id="hiddenInput" autocomplete="off" autocapitalize="none" />
+<input type="text" id="hiddenInput" />
 
 <script>
 const canvas = document.getElementById('loginCanvas');
@@ -34,7 +38,6 @@ let activeInput = null;
 let loginActivated = false;
 let passActivated = false;
 
-// Input and button box positions
 const loginBox = { x: 29, y: 368, width: 662, height: 100 };
 const passBox  = { x: 29, y: 586, width: 662, height: 100 };
 const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
@@ -42,6 +45,13 @@ const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
 const bgImage = new Image();
 bgImage.src = 'background.png';
 bgImage.onload = () => draw();
+
+// Cursor blink logic
+let cursorVisible = true;
+setInterval(() => {
+  cursorVisible = !cursorVisible;
+  if (activeInput) draw();
+}, 500);
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -70,6 +80,22 @@ function drawInputBox(box, text, isActive, isFocused) {
   ctx.rect(box.x + 10, box.y + 10, box.width - 20, box.height - 20);
   ctx.clip();
   ctx.fillText(text, box.x + 14, box.y + box.height / 2 + 2);
+
+  // Blinking cursor
+  if (isFocused && cursorVisible) {
+    const textWidth = ctx.measureText(text).width;
+    const cursorX = box.x + 14 + textWidth + 2;
+    const cursorY = box.y + 20;
+    const cursorHeight = box.height - 40;
+
+    ctx.beginPath();
+    ctx.moveTo(cursorX, cursorY);
+    ctx.lineTo(cursorX, cursorY + cursorHeight);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
@@ -85,17 +111,26 @@ function drawButton(box, text) {
   ctx.textBaseline = 'alphabetic';
 }
 
-canvas.addEventListener('mousedown', (e) => {
-  const { offsetX: x, offsetY: y } = e;
+function isInside(x, y, box) {
+  return x >= box.x && x <= box.x + box.width &&
+         y >= box.y && y <= box.y + box.height;
+}
+
+function handleTouch(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
 
   if (isInside(x, y, loginBox)) {
     activeInput = 'login';
     loginActivated = true;
+    passActivated = false;
     hiddenInput.value = loginID;
     hiddenInput.focus();
   } else if (isInside(x, y, passBox)) {
     activeInput = 'pass';
     passActivated = true;
+    loginActivated = false;
     hiddenInput.value = password;
     hiddenInput.focus();
   } else if (isInside(x, y, buttonBox)) {
@@ -133,11 +168,16 @@ canvas.addEventListener('mousedown', (e) => {
       });
   } else {
     activeInput = null;
+    loginActivated = false;
+    passActivated = false;
     hiddenInput.blur();
   }
 
   draw();
-});
+}
+
+canvas.addEventListener('touchstart', handleTouch, false);
+canvas.addEventListener('mousedown', handleTouch, false);
 
 hiddenInput.addEventListener('input', () => {
   const value = hiddenInput.value;
@@ -148,11 +188,6 @@ hiddenInput.addEventListener('input', () => {
   }
   draw();
 });
-
-function isInside(x, y, box) {
-  return x >= box.x && x <= box.x + box.width &&
-         y >= box.y && y <= box.y + box.height;
-}
 </script>
 
 </body>
